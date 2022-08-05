@@ -64,6 +64,7 @@ pub mod mm;
 #[cfg(CONFIG_NET)]
 pub mod net;
 pub mod pages;
+pub mod pcidev;
 pub mod power;
 pub mod revocable;
 pub mod security;
