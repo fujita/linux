@@ -182,7 +182,7 @@ pub trait Driver {
     /// `pci_{set,get}_drvdata()` functions.
     ///
     /// Require that `Data` implements `PointerWrapper`. We guarantee to
-    /// never move the underlying wrapped data structure. This allows
+    /// never move the underlying wrapped data structure.
     type Data: PointerWrapper + Send + Sync + driver::DeviceRemoval = ();
 
     /// The type holding information about each device id supported by the driver.
