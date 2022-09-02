@@ -7,13 +7,17 @@
 #![allow(dead_code)]
 
 use crate::{
-    bindings, device, driver,
-    error::{from_kernel_result, Result},
+    bindings, device,
+    device::RawDevice,
+    driver,
+    error::{from_kernel_result, Error, Result},
+    irq,
     str::CStr,
     to_result,
     types::PointerWrapper,
     ThisModule,
 };
+use core::fmt;
 
 /// An adapter for the registration of PCI drivers.
 pub struct Adapter<T: Driver>(T);
@@ -204,6 +208,21 @@ pub trait Driver {
     fn remove(_data: &Self::Data);
 }
 
+/// flags for IRQ allocation
+pub mod irq_flags {
+    /// Allow legacy interrupts
+    pub const LEGACY: u32 = bindings::PCI_IRQ_LEGACY;
+    /// Allow MSI interrupts
+    pub const MSI: u32 = bindings::PCI_IRQ_MSI;
+    /// Allow MSI-X interrupts
+    pub const MSIX: u32 = bindings::PCI_IRQ_MSIX;
+    /// Allow all types of interrupts
+    pub const ALL_TYPES: u32 =
+        bindings::PCI_IRQ_LEGACY | bindings::PCI_IRQ_MSI | bindings::PCI_IRQ_MSIX;
+    /// Auto-assign affinity
+    pub const AFFINITY: u32 = bindings::PCI_IRQ_AFFINITY;
+}
+
 /// A PCI device.
 ///
 /// # Invariants
@@ -211,11 +230,60 @@ pub trait Driver {
 /// The field `ptr` is non-null and valid for the lifetime of the object.
 pub struct Device {
     ptr: *mut bindings::pci_dev,
+    enabled: bool,
+    bars: i32,
 }
 
 impl Device {
     unsafe fn from_ptr(ptr: *mut bindings::pci_dev) -> Self {
-        Self { ptr }
+        Self {
+            ptr,
+            enabled: false,
+            bars: 0,
+        }
+    }
+
+    /// enables bus-mastering for device
+    pub fn set_master(&self) {
+        unsafe { bindings::pci_set_master(self.ptr) };
+    }
+
+    /// Initialize device
+    pub fn enable_device(&mut self) -> Result {
+        let ret = unsafe { bindings::pci_enable_device(self.ptr) };
+        if ret != 0 {
+            Err(Error::from_kernel_errno(ret))
+        } else {
+            self.enabled = true;
+            Ok(())
+        }
+    }
+
+    /// Return BAR mask from the type of resource
+    pub fn select_bars(&self, flags: core::ffi::c_ulong) -> i32 {
+        unsafe { bindings::pci_select_bars(self.ptr, flags) }
+    }
+
+    /// Reserve selected PCI I/O and memory resources
+    pub fn request_selected_regions(&mut self, bars: i32, name: &'static CStr) -> Result {
+        let ret =
+            unsafe { bindings::pci_request_selected_regions(self.ptr, bars, name.as_char_ptr()) };
+        if ret != 0 {
+            Err(Error::from_kernel_errno(ret))
+        } else {
+            self.bars |= bars;
+            Ok(())
+        }
+    }
+
+    /// allocate multiple IRQs for a device
+    pub fn alloc_irq_vectors(
+        &mut self,
+        min_vecs: u32,
+        max_vecs: u32,
+        flags: u32,
+    ) -> Result<IrqVec> {
+        IrqVec::new(self, min_vecs, max_vecs, flags)
     }
 }
 
@@ -225,3 +293,68 @@ unsafe impl device::RawDevice for Device {
         unsafe { &mut (*self.ptr).dev }
     }
 }
+
+impl Drop for Device {
+    fn drop(&mut self) {
+        unsafe {
+            // safe even if pci_set_master() wasn't executed.
+            bindings::pci_clear_master(self.ptr);
+            if self.enabled {
+                bindings::pci_disable_device(self.ptr);
+            }
+            bindings::pci_release_selected_regions(self.ptr, self.bars);
+        }
+    }
+}
+
+/// allocated IRQs
+pub struct IrqVec {
+    ptr: *mut bindings::pci_dev,
+}
+
+impl IrqVec {
+    fn new(dev: &Device, min_vecs: u32, max_vecs: u32, flags: u32) -> Result<Self> {
+        let ret = unsafe {
+            bindings::pci_alloc_irq_vectors_affinity(
+                dev.ptr,
+                min_vecs,
+                max_vecs,
+                flags,
+                core::ptr::null_mut(),
+            )
+        };
+        if ret < 0 {
+            return Err(Error::from_kernel_errno(ret));
+        }
+        unsafe {
+            bindings::get_device(dev.raw_device());
+        }
+        Ok(IrqVec { ptr: dev.ptr })
+    }
+
+    /// allocate an interrupt line for a PCI device
+    pub fn request_irq<T: irq::Handler>(
+        &self,
+        index: u32,
+        data: T::Data,
+        name_args: fmt::Arguments<'_>,
+    ) -> Result<irq::Registration<T>> {
+        let ret = unsafe { bindings::pci_irq_vector(self.ptr, index) };
+        if ret < 0 {
+            return Err(Error::from_kernel_errno(ret));
+        }
+        irq::Registration::try_new(ret as _, data, irq::flags::SHARED, name_args)
+    }
+}
+
+impl Drop for IrqVec {
+    fn drop(&mut self) {
+        unsafe {
+            bindings::pci_free_irq_vectors(self.ptr);
+            bindings::put_device(Device::from_ptr(self.ptr).raw_device());
+        }
+    }
+}
+
+unsafe impl Send for IrqVec {}
+unsafe impl Sync for IrqVec {}
