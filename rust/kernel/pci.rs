@@ -10,7 +10,10 @@ use crate::{
     bindings, device,
     device::RawDevice,
     driver,
-    error::{from_kernel_result, Error, Result},
+    error::{
+        code::{EINVAL, ENOMEM},
+        from_kernel_result, Error, Result,
+    },
     irq,
     str::CStr,
     to_result,
@@ -276,6 +279,23 @@ impl Device {
         }
     }
 
+    /// Get address for accessing the device
+    pub fn map_resource(&self, index: usize, len: usize) -> Result<MappedResource> {
+        let pdev = unsafe { &*self.ptr };
+
+        if index >= pdev.resource.len() {
+            return Err(EINVAL);
+        }
+
+        if pdev.resource[index].start > pdev.resource[index].end
+            || len > (pdev.resource[index].end - pdev.resource[index].start).try_into()?
+        {
+            return Err(EINVAL);
+        }
+
+        MappedResource::try_new(pdev.resource[index].start, len)
+    }
+
     /// allocate multiple IRQs for a device
     pub fn alloc_irq_vectors(
         &mut self,
@@ -358,3 +378,98 @@ impl Drop for IrqVec {
 
 unsafe impl Send for IrqVec {}
 unsafe impl Sync for IrqVec {}
+
+/// Address for accessing the device
+/// io_mem.rs requires const size but some drivers have to handle
+/// non const size with ioremap().
+pub struct MappedResource {
+    ptr: usize,
+    len: usize,
+}
+
+macro_rules! define_read {
+    ($(#[$attr:meta])* $name:ident, $type_name:ty) => {
+        /// Reads IO data from the given offset
+        $(#[$attr])*
+        #[inline]
+        pub fn $name(&self, offset: usize) -> Result<$type_name> {
+            if offset + core::mem::size_of::<$type_name>() > self.len {
+                return Err(EINVAL);
+            }
+            let ptr = self.ptr.wrapping_add(offset);
+            Ok(unsafe { bindings::$name(ptr as _) })
+        }
+    };
+}
+
+macro_rules! define_write {
+    ($(#[$attr:meta])* $name:ident, $type_name:ty) => {
+        /// Writes IO data to the given offset
+        $(#[$attr])*
+        #[inline]
+        pub fn $name(&self, value: $type_name, offset: usize) -> Result {
+            if offset + core::mem::size_of::<$type_name>() > self.len {
+                return Err(EINVAL);
+            }
+            let ptr = self.ptr.wrapping_add(offset);
+            unsafe { bindings::$name(value, ptr as _) };
+            Ok(())
+        }
+   };
+}
+
+impl MappedResource {
+    fn try_new(offset: bindings::resource_size_t, len: usize) -> Result<Self> {
+        let addr = unsafe { bindings::ioremap(offset, len as _) };
+        if addr.is_null() {
+            Err(ENOMEM)
+        } else {
+            Ok(Self {
+                ptr: addr as usize,
+                len,
+            })
+        }
+    }
+
+    define_read!(readb, u8);
+    define_read!(readb_relaxed, u8);
+    define_read!(readw, u16);
+    define_read!(readw_relaxed, u16);
+    define_read!(readl, u32);
+    define_read!(readl_relaxed, u32);
+    define_read!(
+        #[cfg(CONFIG_64BIT)]
+        readq,
+        u64
+    );
+    define_read!(
+        #[cfg(CONFIG_64BIT)]
+        readq_relaxed,
+        u64
+    );
+
+    define_write!(writeb, u8);
+    define_write!(writeb_relaxed, u8);
+    define_write!(writew, u16);
+    define_write!(writew_relaxed, u16);
+    define_write!(writel, u32);
+    define_write!(writel_relaxed, u32);
+    define_write!(
+        #[cfg(CONFIG_64BIT)]
+        writeq,
+        u64
+    );
+    define_write!(
+        #[cfg(CONFIG_64BIT)]
+        writeq_relaxed,
+        u64
+    );
+}
+
+impl Drop for MappedResource {
+    fn drop(&mut self) {
+        unsafe {
+            bindings::iounmap(self.ptr as _);
+        }
+    }
+}
