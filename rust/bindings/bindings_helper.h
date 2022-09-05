@@ -8,8 +8,12 @@
 
 #include <kunit/test.h>
 #include <linux/amba/bus.h>
+#include <linux/blkdev.h>
+#include <linux/blk-mq.h>
+#include <linux/blk_types.h>
 #include <linux/cdev.h>
 #include <linux/clk.h>
+#include <linux/dma-mapping.h>
 #include <linux/errname.h>
 #include <linux/file.h>
 #include <linux/fs.h>

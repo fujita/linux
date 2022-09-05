@@ -51,6 +51,7 @@ pub mod clk;
 pub mod cred;
 pub mod delay;
 pub mod device;
+pub mod dma;
 pub mod driver;
 pub mod error;
 pub mod file;

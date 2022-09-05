@@ -19,6 +19,8 @@
  */
 
 #include <linux/amba/bus.h>
+#include <linux/blk-mq.h>
+#include <linux/blkdev.h>
 #include <linux/bug.h>
 #include <linux/build_bug.h>
 #include <linux/clk.h>
@@ -40,6 +42,7 @@
 #include <linux/skbuff.h>
 #include <linux/uaccess.h>
 #include <linux/uio.h>
+#include <linux/pci.h>
 
 __noreturn void rust_helper_BUG(void)
 {
@@ -667,6 +670,57 @@ void *rust_helper_pci_get_drvdata(struct pci_dev *pdev)
     return pci_get_drvdata(pdev);
 }
 EXPORT_SYMBOL_GPL(rust_helper_pci_get_drvdata);
+
+struct request *rust_helper_blk_mq_tag_to_rq(struct blk_mq_tags *tags, unsigned int tag)
+{
+	return blk_mq_tag_to_rq(tags, tag);
+}
+EXPORT_SYMBOL_GPL(rust_helper_blk_mq_tag_to_rq);
+
+void *rust_helper_blk_mq_rq_to_pdu(struct request *rq)
+{
+	return blk_mq_rq_to_pdu(rq);
+}
+EXPORT_SYMBOL_GPL(rust_helper_blk_mq_rq_to_pdu);
+
+struct gendisk *rust_helper_blk_mq_alloc_disk(struct blk_mq_tag_set *set, void *queuedata)
+{
+	return blk_mq_alloc_disk(set, queuedata);
+}
+EXPORT_SYMBOL_GPL(rust_helper_blk_mq_alloc_disk);
+
+int rust_helper_add_disk(struct gendisk *disk)
+{
+	return device_add_disk(NULL, disk, NULL);
+}
+EXPORT_SYMBOL_GPL(rust_helper_add_disk);
+
+unsigned short rust_helper_blk_rq_nr_phys_segments(struct request *rq) {
+	return blk_rq_nr_phys_segments(rq);
+}
+EXPORT_SYMBOL_GPL(rust_helper_blk_rq_nr_phys_segments);
+
+int rust_helper_blk_rq_map_sg(struct request_queue *q, struct request *rq, struct scatterlist *sglist) {
+	return blk_rq_map_sg(q, rq, sglist);
+}
+EXPORT_SYMBOL_GPL(rust_helper_blk_rq_map_sg);
+
+unsigned int rust_helper_blk_rq_payload_bytes(struct request *rq) {
+	return blk_rq_payload_bytes(rq);
+}
+EXPORT_SYMBOL_GPL(rust_helper_blk_rq_payload_bytes);
+
+unsigned int rust_helper_blk_rq_bytes(const struct request *rq)
+{
+	return blk_rq_bytes(rq);
+}
+EXPORT_SYMBOL_GPL(rust_helper_blk_rq_bytes);
+
+sector_t rust_helper_blk_rq_pos(const struct request *rq)
+{
+	return blk_rq_pos(rq);
+}
+EXPORT_SYMBOL_GPL(rust_helper_blk_rq_pos);
 
 /*
  * We use `bindgen`'s `--size_t-is-usize` option to bind the C `size_t` type
