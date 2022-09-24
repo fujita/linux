@@ -1,8 +1,4 @@
-on:
-  pull_request: {}
-  schedule:
-    - cron: '30 5,17 * * *'
-  push:
+on: push
 
 jobs:
   ci:
