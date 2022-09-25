@@ -2,6 +2,8 @@
 
 //! Endian integer types
 
+use crate::static_assert;
+
 macro_rules! define_le_integer {
     ($name:ident, $native_type:ty) => {
         /// little-endian integer
@@ -23,6 +25,8 @@ macro_rules! define_le_integer {
                 <$native_type>::from_le(v.0)
             }
         }
+
+        static_assert!(core::mem::size_of::<$name>() == core::mem::size_of::<$native_type>());
     };
 }
 
@@ -47,6 +51,8 @@ macro_rules! define_be_integer {
                 <$native_type>::from_be(v.0)
             }
         }
+
+        static_assert!(core::mem::size_of::<$name>() == core::mem::size_of::<$native_type>());
     };
 }
 
@@ -61,16 +67,6 @@ define_be_integer!(be16, u16);
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn check_size() {
-        assert_eq!(core::mem::size_of::<be16>(), core::mem::size_of::<u16>());
-        assert_eq!(core::mem::size_of::<be32>(), core::mem::size_of::<u32>());
-        assert_eq!(core::mem::size_of::<be64>(), core::mem::size_of::<u64>());
-        assert_eq!(core::mem::size_of::<le16>(), core::mem::size_of::<u16>());
-        assert_eq!(core::mem::size_of::<le32>(), core::mem::size_of::<u32>());
-        assert_eq!(core::mem::size_of::<le64>(), core::mem::size_of::<u64>());
-    }
 
     #[test]
     fn test_le16() {
