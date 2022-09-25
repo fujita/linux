@@ -1,12 +1,23 @@
 // SPDX-License-Identifier: GPL-2.0
 
-//! Endian integer types
+//! Endian integer types.
+//!
+//! C header: [`include/uapi/linux/types.h`](../../../../include/uapi/linux/types.h)
 
 use crate::static_assert;
 
 macro_rules! define_le_integer {
     ($name:ident, $native_type:ty) => {
-        /// little-endian integer
+        #[doc = concat!("Represents little-endian integer `__", stringify!($name), "`.")]
+        /// # Examples
+        ///
+        /// ```
+        #[doc = concat!("use kernel::endian::", stringify!($name), ";")]
+        ///
+        #[doc = concat!("let n = 0x1A", stringify!($native_type), ";")]
+        #[doc = concat!("let v = ", stringify!($name), "::from(n);")]
+        #[doc = concat!("assert_eq!(", stringify!($native_type), "::from(v), n);")]
+        /// ```
         #[allow(non_camel_case_types)]
         #[derive(Default, Clone, Copy)]
         #[repr(transparent)]
@@ -32,7 +43,16 @@ macro_rules! define_le_integer {
 
 macro_rules! define_be_integer {
     ($name:ident, $native_type:ty) => {
-        /// big-endian integer
+        #[doc = concat!("Represents big-endian integer `__", stringify!($name), "`.")]
+        /// # Examples
+        ///
+        /// ```
+        #[doc = concat!("use kernel::endian::", stringify!($name), ";")]
+        ///
+        #[doc = concat!("let n = 0x1A", stringify!($native_type), ";")]
+        #[doc = concat!("let v = ", stringify!($name), "::from(n);")]
+        #[doc = concat!("assert_eq!(", stringify!($native_type), "::from(v), n);")]
+        /// ```
         #[allow(non_camel_case_types)]
         #[derive(Default, Clone, Copy)]
         #[repr(transparent)]
