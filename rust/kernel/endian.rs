@@ -11,22 +11,14 @@ macro_rules! define_le_integer {
         pub struct $name($native_type);
 
         impl From<$native_type> for $name {
-            #[cfg(target_endian = "little")]
-            fn from(v: $native_type) -> Self {
-                Self(v)
-            }
-            #[cfg(target_endian = "big")]
+            #[inline(always)]
             fn from(v: $native_type) -> Self {
                 Self(<$native_type>::from_le(v))
             }
         }
 
         impl From<$name> for $native_type {
-            #[cfg(target_endian = "little")]
-            fn from(v: $name) -> Self {
-                v.0
-            }
-            #[cfg(target_endian = "big")]
+            #[inline(always)]
             fn from(v: $name) -> Self {
                 <$native_type>::from_le(v.0)
             }
@@ -43,24 +35,16 @@ macro_rules! define_be_integer {
         pub struct $name($native_type);
 
         impl From<$native_type> for $name {
-            #[cfg(target_endian = "little")]
+            #[inline(always)]
             fn from(v: $native_type) -> Self {
                 Self(<$native_type>::from_be(v))
-            }
-            #[cfg(target_endian = "big")]
-            fn from(v: $native_type) -> Self {
-                Self(v)
             }
         }
 
         impl From<$name> for $native_type {
-            #[cfg(target_endian = "little")]
+            #[inline(always)]
             fn from(v: $name) -> Self {
                 <$native_type>::from_be(v.0)
-            }
-            #[cfg(target_endian = "big")]
-            fn from(v: $name) -> Self {
-                v.0
             }
         }
     };
