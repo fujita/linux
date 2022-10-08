@@ -26,7 +26,7 @@ macro_rules! define_le_integer {
         impl From<$native_type> for $name {
             #[inline(always)]
             fn from(v: $native_type) -> Self {
-                Self(<$native_type>::from_le(v))
+                Self(<$native_type>::to_le(v))
             }
         }
 
@@ -61,7 +61,7 @@ macro_rules! define_be_integer {
         impl From<$native_type> for $name {
             #[inline(always)]
             fn from(v: $native_type) -> Self {
-                Self(<$native_type>::from_be(v))
+                Self(<$native_type>::to_be(v))
             }
         }
 
