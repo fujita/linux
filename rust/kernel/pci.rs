@@ -4,8 +4,6 @@
 //!
 //! C header: [`include/linux/pci.h`](../../../../include/linux/pci.h)
 
-#![allow(dead_code)]
-
 use crate::{
     bindings, device, driver,
     error::{from_kernel_result, Result},
@@ -26,16 +24,27 @@ impl<T: Driver> driver::DriverOps for Adapter<T> {
         name: &'static CStr,
         module: &'static ThisModule,
     ) -> Result {
+        // SAFETY: By the safety requirements of this function (defined in the trait definition),
+        // `reg` is non-null and valid.
         let pdrv: &mut bindings::pci_driver = unsafe { &mut *reg };
 
         pdrv.name = name.as_char_ptr();
         pdrv.probe = Some(Self::probe_callback);
         pdrv.remove = Some(Self::remove_callback);
         pdrv.id_table = T::ID_TABLE.as_ref();
+        // SAFETY:
+        //   - `pdrv` lives at least until the call to `pci_unregister_driver()` returns.
+        //   - `name` pointer has static lifetime.
+        //   - `probe()` and `remove()` are static functions.
+        //   - `of_match_table` is a raw pointer with static lifetime,
+        //      as guaranteed by the [`driver::IdTable`] type.
         to_result(unsafe { bindings::__pci_register_driver(reg, module.0, name.as_char_ptr()) })
     }
 
     unsafe fn unregister(reg: *mut bindings::pci_driver) {
+        // SAFETY: By the safety requirements of this function (defined in the trait definition),
+        // `reg` was passed (and updated) by a previous successful call to
+        // `__pci_register_driver`.
         unsafe { bindings::pci_unregister_driver(reg) }
     }
 }
@@ -46,6 +55,9 @@ impl<T: Driver> Adapter<T> {
         id: *const bindings::pci_device_id,
     ) -> core::ffi::c_int {
         from_kernel_result! {
+            // SAFETY: `pdev` is valid by the contract with the C code. `dev` is alive only for the
+            // duration of this call, so it is guaranteed to remain alive for the lifetime of
+            // `pdev`.
             let mut dev = unsafe { Device::from_ptr(pdev) };
 
             // SAFETY: `id` is a pointer within the static table, so it's always valid.
@@ -57,13 +69,21 @@ impl<T: Driver> Adapter<T> {
                 unsafe {(&*ptr).as_ref()}
             };
             let data = T::probe(&mut dev, info)?;
+             // SAFETY: `pdev` is guaranteed to be a valid, non-null pointer.
             unsafe { bindings::pci_set_drvdata(pdev, data.into_pointer() as _) };
             Ok(0)
         }
     }
 
     extern "C" fn remove_callback(pdev: *mut bindings::pci_dev) {
+        // SAFETY: `pdev` is guaranteed to be a valid, non-null pointer.
         let ptr = unsafe { bindings::pci_get_drvdata(pdev) };
+        // SAFETY:
+        //   - we allocated this pointer using `T::Data::into_pointer`,
+        //     so it is safe to turn back into a `T::Data`.
+        //   - the allocation happened in `probe`, no-one freed the memory,
+        //     `remove` is the canonical kernel location to free driver data. so OK
+        //     to convert the pointer back to a Rust structure here.
         let data = unsafe { T::Data::from_pointer(ptr) };
         T::remove(&data);
         <T::Data as driver::DeviceRemoval>::device_remove(&data);
@@ -214,6 +234,12 @@ pub struct Device {
 }
 
 impl Device {
+    /// Creates a new PCI device from the given pointer.
+    ///
+    /// # Safety
+    ///
+    /// `ptr` must be non-null and valid. It must remain valid for the lifetime of the returned
+    /// instance.
     unsafe fn from_ptr(ptr: *mut bindings::pci_dev) -> Self {
         Self { ptr }
     }
