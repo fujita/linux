@@ -56,6 +56,18 @@ pub fn coarse_sleep(duration: Duration) {
     unsafe { bindings::msleep(coarse_sleep_conversion(duration)) }
 }
 
+/// busy wait for enough loop cycles to achieve the desired delay.
+///
+/// This function supports the C side `mdelay`, `udelay`, and `ndelay` functions.
+pub fn coarse_delay(duration: Duration) {
+    let usecs = duration.subsec_micros();
+    if usecs == 0 {
+        unsafe { bindings::ndelay(duration.subsec_nanos() as _) }
+    } else {
+        unsafe { bindings::udelay(usecs as _) }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{coarse_sleep_conversion, MILLIS_PER_SEC};
