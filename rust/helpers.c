@@ -655,6 +655,11 @@ int rust_helper_fs_parse(struct fs_context *fc,
 }
 EXPORT_SYMBOL_GPL(rust_helper_fs_parse);
 
+void rust_helper_mdelay(unsigned long usecs) {
+	mdelay(usecs);
+}
+EXPORT_SYMBOL_GPL(rust_helper_mdelay);
+
 void rust_helper_udelay(unsigned long usecs) {
 	udelay(usecs);
 }
