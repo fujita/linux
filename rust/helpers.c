@@ -18,6 +18,12 @@
  * accidentally exposed.
  */
 
+#include <crypto/akcipher.h>
+#include <crypto/aead.h>
+#include <crypto/ecdh.h>
+#include <crypto/hash.h>
+#include <crypto/kpp.h>
+#include <crypto/skcipher.h>
 #include <linux/amba/bus.h>
 #include <linux/bug.h>
 #include <linux/build_bug.h>
@@ -46,6 +52,206 @@ __noreturn void rust_helper_BUG(void)
 	BUG();
 }
 EXPORT_SYMBOL_GPL(rust_helper_BUG);
+
+void rust_helper_akcipher_request_set_crypt(struct akcipher_request *req,
+                                              struct scatterlist *src,
+                                              struct scatterlist *dst,
+                                              unsigned int src_len,
+                                              unsigned int dst_len) {
+	akcipher_request_set_crypt(req, src, dst, src_len, dst_len);
+}
+EXPORT_SYMBOL_GPL(rust_helper_akcipher_request_set_crypt);
+
+void rust_helper_akcipher_request_set_callback(struct akcipher_request *req,
+	                                         u32 flgs,
+		                                 crypto_completion_t cmpl,
+                                                 void *data) {
+	return akcipher_request_set_callback(req, flgs, cmpl, data)											;
+}
+EXPORT_SYMBOL_GPL(rust_helper_akcipher_request_set_callback);
+
+int rust_helper_crypto_akcipher_set_pub_key(struct crypto_akcipher *tfm,
+                                              const void *key,
+                                              unsigned int keylen) {
+	return crypto_akcipher_set_pub_key(tfm, key, keylen);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_akcipher_set_pub_key);
+
+int rust_helper_crypto_akcipher_verify(struct akcipher_request *req) {
+	return crypto_akcipher_verify(req);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_akcipher_verify);
+
+void rust_helper_crypto_free_akcipher(struct crypto_akcipher *tfm)
+{
+	crypto_free_akcipher(tfm);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_free_akcipher);
+
+struct akcipher_request *rust_helper_akcipher_request_alloc(struct crypto_akcipher *tfm, gfp_t gfp) {
+	return akcipher_request_alloc(tfm, gfp);
+}
+EXPORT_SYMBOL_GPL(rust_helper_akcipher_request_alloc);
+
+void rust_helper_akcipher_request_free(struct akcipher_request *req) {
+	akcipher_request_free(req);
+}
+EXPORT_SYMBOL_GPL(rust_helper_akcipher_request_free);
+
+struct kpp_request *rust_helper_kpp_request_alloc(struct crypto_kpp *tfm, gfp_t gfp) {
+	return kpp_request_alloc(tfm, gfp);
+}
+EXPORT_SYMBOL_GPL(rust_helper_kpp_request_alloc);
+
+void rust_helper_kpp_request_free(struct kpp_request *req) {
+	kpp_request_free(req);
+}
+EXPORT_SYMBOL_GPL(rust_helper_kpp_request_free);
+
+void rust_helper_kpp_request_set_input(struct kpp_request *req,
+                                         struct scatterlist *input,
+                                         unsigned int input_len)
+{
+	kpp_request_set_input(req, input, input_len);
+}
+EXPORT_SYMBOL_GPL(rust_helper_kpp_request_set_input);
+
+void rust_helper_kpp_request_set_output(struct kpp_request *req,
+                                          struct scatterlist *output,
+                                          unsigned int output_len)
+{
+	kpp_request_set_output(req, output, output_len);
+}
+EXPORT_SYMBOL_GPL(rust_helper_kpp_request_set_output);
+
+void rust_helper_kpp_request_set_callback(struct kpp_request *req,
+                                            u32 flgs,
+                                            crypto_completion_t cmpl,
+                                            void *data)
+{
+	kpp_request_set_callback(req, flgs, cmpl, data);
+}
+EXPORT_SYMBOL_GPL(rust_helper_kpp_request_set_callback);
+
+int rust_helper_crypto_kpp_set_secret(struct crypto_kpp *tfm,
+    const void *buffer, unsigned int len) {
+	return crypto_kpp_set_secret(tfm, buffer, len);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_kpp_set_secret);
+
+int rust_helper_crypto_kpp_generate_public_key(struct kpp_request *req) {
+	return crypto_kpp_generate_public_key(req);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_kpp_generate_public_key);
+
+int rust_helper_crypto_kpp_compute_shared_secret(struct kpp_request *req) {
+	return crypto_kpp_compute_shared_secret(req);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_kpp_compute_shared_secret);
+
+void rust_helper_crypto_free_kpp(struct crypto_kpp *tfm)
+{
+        crypto_free_kpp(tfm);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_free_kpp);
+
+void rust_helper_crypto_free_shash(struct crypto_shash *tfm)
+{
+	crypto_free_shash(tfm);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_free_shash);
+
+unsigned int rust_helper_crypto_shash_digestsize(struct crypto_shash *tfm)
+{
+    return crypto_shash_digestsize(tfm);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_shash_digestsize);
+
+unsigned int rust_helper_crypto_shash_descsize(struct crypto_shash *tfm)
+{
+    return crypto_shash_descsize(tfm);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_shash_descsize);
+
+int rust_helper_crypto_shash_init(struct shash_desc *desc) {
+	return crypto_shash_init(desc);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_shash_init);
+
+void rust_helper_crypto_free_sync_skcipher(struct crypto_sync_skcipher *tfm) {
+	crypto_free_sync_skcipher(tfm);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_free_sync_skcipher);
+
+struct skcipher_request *rust_helper_skcipher_request_alloc(
+	struct crypto_skcipher *tfm, gfp_t gfp)
+{
+	return skcipher_request_alloc(tfm, gfp);
+}
+EXPORT_SYMBOL_GPL(rust_helper_skcipher_request_alloc);
+
+void rust_helper_skcipher_request_set_tfm(struct skcipher_request *req,
+	struct crypto_skcipher *tfm) {
+	return skcipher_request_set_tfm(req, tfm);
+}
+EXPORT_SYMBOL_GPL(rust_helper_skcipher_request_set_tfm);
+
+void rust_helper_skcipher_request_set_callback(struct skcipher_request *req,
+	u32 flags, crypto_completion_t compl, void *data) {
+	skcipher_request_set_callback(req, flags, compl, data);
+}
+EXPORT_SYMBOL_GPL(rust_helper_skcipher_request_set_callback);
+
+void rust_helper_skcipher_request_zero(struct skcipher_request *req) {
+	skcipher_request_zero(req);
+}
+EXPORT_SYMBOL_GPL(rust_helper_skcipher_request_zero);
+
+void rust_helper_skcipher_request_free(struct skcipher_request *req) {
+	skcipher_request_free(req);
+}
+EXPORT_SYMBOL_GPL(rust_helper_skcipher_request_free);
+
+void rust_helper_skcipher_request_set_crypt(struct skcipher_request *req,
+	struct scatterlist *src, struct scatterlist *dst,
+	unsigned int cryptlen, void *iv) {
+	skcipher_request_set_crypt(req, src, dst, cryptlen, iv);
+}
+EXPORT_SYMBOL_GPL(rust_helper_skcipher_request_set_crypt);
+
+void rust_helper_crypto_free_aead(struct crypto_aead *tfm) {
+	crypto_free_aead(tfm);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_free_aead);
+
+void rust_helper_aead_request_set_crypt(struct aead_request *req, struct scatterlist *src,
+                            struct scatterlist *dst, unsigned int cryptlen, u8 *iv) {
+	aead_request_set_crypt(req, src, dst, cryptlen, iv);
+}
+EXPORT_SYMBOL_GPL(rust_helper_aead_request_set_crypt);
+
+void rust_helper_aead_request_set_ad(struct aead_request *req,
+	unsigned int assoclen) {
+	aead_request_set_ad(req, assoclen);
+}
+EXPORT_SYMBOL_GPL(rust_helper_aead_request_set_ad);
+
+void rust_helper_aead_request_set_callback(struct aead_request *req,
+    u32 flags, crypto_completion_t compl, void *data)
+{
+	aead_request_set_callback(req, flags, compl, data);
+}
+EXPORT_SYMBOL_GPL(rust_helper_aead_request_set_callback);
+
+struct aead_request *rust_helper_aead_request_alloc(struct crypto_aead *tfm, gfp_t gfp) {
+	return aead_request_alloc(tfm, gfp);
+}
+EXPORT_SYMBOL_GPL(rust_helper_aead_request_alloc);
+
+void rust_helper_sg_set_buf(struct scatterlist *sg, const void *buf, unsigned int buflen) {
+	sg_set_buf(sg, buf, buflen);
+}
+EXPORT_SYMBOL_GPL(rust_helper_sg_set_buf);
 
 void rust_helper_clk_disable_unprepare(struct clk *clk)
 {

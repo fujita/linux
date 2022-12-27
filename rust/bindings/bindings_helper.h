@@ -6,8 +6,15 @@
  * Sorted alphabetically.
  */
 
+#include <crypto/akcipher.h>
+#include <crypto/aead.h>
+#include <crypto/ecdh.h>
+#include <crypto/hash.h>
+#include <crypto/kpp.h>
+#include <crypto/skcipher.h>
 #include <kunit/test.h>
 #include <linux/amba/bus.h>
+#include <linux/base64.h>
 #include <linux/cdev.h>
 #include <linux/clk.h>
 #include <linux/errname.h>

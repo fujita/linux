@@ -49,6 +49,7 @@ pub mod chrdev;
 #[cfg(CONFIG_COMMON_CLK)]
 pub mod clk;
 pub mod cred;
+pub mod crypto;
 pub mod delay;
 pub mod device;
 pub mod driver;
