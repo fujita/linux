@@ -77,6 +77,18 @@ int rust_helper_crypto_akcipher_set_pub_key(struct crypto_akcipher *tfm,
 }
 EXPORT_SYMBOL_GPL(rust_helper_crypto_akcipher_set_pub_key);
 
+int rust_helper_crypto_akcipher_set_priv_key(struct crypto_akcipher *tfm,
+                                               const void *key,
+                                               unsigned int keylen) {
+	return crypto_akcipher_set_priv_key(tfm, key, keylen);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_akcipher_set_priv_key);
+
+int rust_helper_crypto_akcipher_sign(struct akcipher_request *req) {
+	return crypto_akcipher_sign(req);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_akcipher_sign);
+
 int rust_helper_crypto_akcipher_verify(struct akcipher_request *req) {
 	return crypto_akcipher_verify(req);
 }

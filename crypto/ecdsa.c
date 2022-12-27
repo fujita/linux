@@ -8,10 +8,24 @@
 #include <crypto/internal/ecc.h>
 #include <crypto/akcipher.h>
 #include <crypto/ecdh.h>
+#include <crypto/rng.h>
 #include <linux/asn1_decoder.h>
 #include <linux/scatterlist.h>
 
 #include "ecdsasignature.asn1.h"
+
+extern void vli_rshift1(u64 *vli, unsigned int ndigits);
+extern u64 vli_lshift(u64 *result, const u64 *in, unsigned int shift,
+	       unsigned int ndigits);
+extern void vli_clear(u64 *vli, unsigned int ndigits);
+extern u64 vli_test_bit(const u64 *vli, unsigned int bit);
+extern void vli_set(u64 *dest, const u64 *src, unsigned int ndigits);
+extern void vli_mod_add(u64 *result, const u64 *left, const u64 *right,
+			const u64 *mod, unsigned int ndigits);
+extern void ecc_point_mult(struct ecc_point *result,
+			   const struct ecc_point *point, const u64 *scalar,
+		    u64 *initial_z, const struct ecc_curve *curve,
+		    unsigned int ndigits);
 
 struct ecc_ctx {
 	unsigned int curve_id;
@@ -20,6 +34,7 @@ struct ecc_ctx {
 	bool pub_key_set;
 	u64 x[ECC_MAX_DIGITS]; /* pub key x and y coordinates */
 	u64 y[ECC_MAX_DIGITS];
+	u64 private_key[ECC_MAX_DIGITS];
 	struct ecc_point pub_key;
 };
 
@@ -161,8 +176,10 @@ static int ecdsa_verify(struct akcipher_request *req)
 
 	ret = asn1_ber_decoder(&ecdsasignature_decoder, &sig_ctx,
 			       buffer, req->src_len);
-	if (ret < 0)
+	if (ret < 0) {
+		printk(KERN_INFO "bad asn1 format %d\n", ret);
 		goto error;
+	}
 
 	/* if the hash is shorter then we will add leading zeros to fit to ndigits */
 	diff = keylen - req->dst_len;
@@ -183,6 +200,144 @@ error:
 	kfree(buffer);
 
 	return ret;
+}
+
+/* Computes result = input % mod.
+ * Assumes that input < mod, result != mod.
+ */
+static void vli_mod(u64 *result, const u64 *input, const u64 *mod,
+	     unsigned int ndigits)
+{
+	if (vli_cmp(input, mod, ndigits) >= 0)
+		vli_sub(result, input, mod, ndigits);
+	else
+		vli_set(result, input, ndigits);
+}
+
+/* Computes result = (left * right) % mod.
+ * Assumes that left < mod and right < mod, result != mod.
+ * Uses:
+ *	(a * b) % m = ((a % m) * (b % m)) % m
+ *	(a * b) % m = (a + a + ... + a) % m = b modular additions of (a % m)
+ */
+static void vli_mod_mult(u64 *result, const u64 *left, const u64 *right,
+		  const u64 *mod, unsigned int ndigits)
+{
+	u64 t1[ECC_MAX_DIGITS], mm[ECC_MAX_DIGITS];
+	u64 aa[ECC_MAX_DIGITS], bb[ECC_MAX_DIGITS];
+
+	vli_clear(result, ndigits);
+	vli_set(aa, left, ndigits);
+	vli_set(bb, right, ndigits);
+	vli_set(mm, mod, ndigits);
+
+	/* aa = aa % mm */
+	vli_mod(aa, aa, mm, ndigits);
+
+	/* bb = bb % mm */
+	vli_mod(bb, bb, mm, ndigits);
+
+	while (!vli_is_zero(bb, ndigits)) {
+
+		/* if bb is odd i.e. 0th bit set then add
+		 * aa i.e. result = (result + aa) % mm
+		 */
+		if (vli_test_bit(bb, 0))
+			vli_mod_add(result, result, aa, mm, ndigits);
+
+		/* bb = bb / 2 = bb >> 1 */
+		vli_rshift1(bb, ndigits);
+
+		/* aa = (aa * 2) % mm */
+		vli_sub(t1, mm, aa, ndigits);
+		if (vli_cmp(aa, t1, ndigits) == -1)
+			/* if aa < t1 then aa = aa * 2 = aa << 1*/
+			vli_lshift(aa, aa, 1, ndigits);
+		else
+			/* if aa >= t1 then aa = aa - t1 */
+			vli_sub(aa, aa, t1, ndigits);
+	}
+}
+
+static inline void ecc_digits_be(const void *in, u64 *out, unsigned int ndigits) {
+	const __le64 *src = (__force __le64 *)in;
+	int i;
+
+	for (i = 0; i < ndigits; i++) {
+		u64 v = get_unaligned_le64(&src[i]);
+		put_unaligned_be64(v, &out[ndigits - 1 - i]);
+	}
+}
+
+static int ecdsa_sign(struct akcipher_request *req)
+{
+	struct crypto_akcipher *tfm = crypto_akcipher_reqtfm(req);
+	struct ecc_ctx *ctx = akcipher_tfm_ctx(tfm);
+	unsigned int ndigits = ctx->curve->g.ndigits;
+	unsigned int nbytes = ndigits << ECC_DIGITS_TO_BYTES_SHIFT;
+	const struct ecc_curve *curve = ctx->curve;
+	struct ecc_point *x1y1 = NULL;
+	u64 z[ECC_MAX_DIGITS], d[ECC_MAX_DIGITS];
+	u64 k[ECC_MAX_DIGITS], k_inv[ECC_MAX_DIGITS];
+	u64 r[ECC_MAX_DIGITS], s[ECC_MAX_DIGITS];
+	u64 dr[ECC_MAX_DIGITS], zdr[ECC_MAX_DIGITS];
+	int err;
+	u64 tmp[ECC_MAX_DIGITS];
+
+	if (req->dst_len < 2 * nbytes) {
+		req->dst_len = 2 * nbytes;
+		return -EINVAL;
+	}
+
+	sg_pcopy_to_buffer(req->src,
+		sg_nents_for_len(req->src, req->src_len),
+		tmp, req->src_len, 0);
+
+	ecc_swap_digits(tmp, z, ndigits);
+
+	/* d */
+	vli_set(d, (const u64 *)ctx->private_key, ndigits);
+
+	/* k */
+	if (crypto_get_default_rng())
+		return -EFAULT;
+	err = crypto_rng_get_bytes(crypto_default_rng, (u8 *)k, nbytes);
+	crypto_put_default_rng();
+	if (err)
+		return err;
+
+	x1y1 = ecc_alloc_point(ndigits);
+	if (!x1y1)
+		return -ENOMEM;
+
+	/* (x1, y1) = k x G */
+	ecc_point_mult(x1y1, &curve->g, k, NULL, curve, ndigits);
+
+	/* r = x1 mod n */
+	vli_mod(r, x1y1->x, curve->n, ndigits);
+
+	/* k^-1 */
+	vli_mod_inv(k_inv, k, curve->n, ndigits);
+
+	/* d . r mod n */
+	vli_mod_mult(dr, d, r, curve->n, ndigits);
+
+	/* z + dr mod n */
+	vli_mod_add(zdr, z, dr, curve->n, ndigits);
+
+	/* k^-1 . ( z + dr) mod n */
+	vli_mod_mult(s, k_inv, zdr, curve->n, ndigits);
+
+	/* write signature (r,s) in dst */
+	ecc_digits_be(r, tmp, ndigits);
+	sg_pcopy_from_buffer(req->dst, sg_nents_for_len(req->dst, req->dst_len), tmp, nbytes, 0);
+	ecc_digits_be(s, tmp, ndigits);
+	sg_pcopy_from_buffer(req->dst, sg_nents_for_len(req->dst, req->dst_len), tmp, nbytes, nbytes);
+
+	req->dst_len = 2 * nbytes;
+
+	ecc_free_point(x1y1);
+	return 0;
 }
 
 static int ecdsa_ecc_ctx_init(struct ecc_ctx *ctx, unsigned int curve_id)
@@ -251,6 +406,35 @@ static int ecdsa_set_pub_key(struct crypto_akcipher *tfm, const void *key, unsig
 	return ret;
 }
 
+static int ecdsa_set_priv_key(struct crypto_akcipher *tfm, const void *key,
+		       unsigned int keylen) {
+	struct ecc_ctx *ctx = akcipher_tfm_ctx(tfm);
+	const u64 *digits = (const u64 *)key;
+	unsigned int ndigits;
+	int ret;
+
+	ret = ecdsa_ecc_ctx_reset(ctx);
+	if (ret < 0) {
+		printk(KERN_INFO "failed to reset %d\n", ret);
+		return ret;
+	}
+
+	ndigits = keylen / sizeof(u64);
+	if (ndigits != ctx->curve->g.ndigits) {
+		printk(KERN_INFO "mismatch %d %d\n", ndigits, ctx->curve->g.ndigits);
+		return -EINVAL;
+	}
+
+	if (ecc_is_key_valid(ctx->curve_id, ctx->curve->g.ndigits, digits, keylen) < 0) {
+		printk(KERN_INFO "key invalid\n");
+		return -EINVAL;
+	}
+
+	ecc_swap_digits(digits, ctx->private_key, ndigits);
+
+	return 0;
+}
+
 static void ecdsa_exit_tfm(struct crypto_akcipher *tfm)
 {
 	struct ecc_ctx *ctx = akcipher_tfm_ctx(tfm);
@@ -295,8 +479,10 @@ static int ecdsa_nist_p256_init_tfm(struct crypto_akcipher *tfm)
 }
 
 static struct akcipher_alg ecdsa_nist_p256 = {
+	.sign = ecdsa_sign,
 	.verify = ecdsa_verify,
 	.set_pub_key = ecdsa_set_pub_key,
+	.set_priv_key = ecdsa_set_priv_key,
 	.max_size = ecdsa_max_size,
 	.init = ecdsa_nist_p256_init_tfm,
 	.exit = ecdsa_exit_tfm,

@@ -119,7 +119,7 @@ void ecc_free_point(struct ecc_point *p)
 }
 EXPORT_SYMBOL(ecc_free_point);
 
-static void vli_clear(u64 *vli, unsigned int ndigits)
+void vli_clear(u64 *vli, unsigned int ndigits)
 {
 	int i;
 
@@ -142,7 +142,7 @@ bool vli_is_zero(const u64 *vli, unsigned int ndigits)
 EXPORT_SYMBOL(vli_is_zero);
 
 /* Returns nonzero if bit of vli is set. */
-static u64 vli_test_bit(const u64 *vli, unsigned int bit)
+u64 vli_test_bit(const u64 *vli, unsigned int bit)
 {
 	return (vli[bit / 64] & ((u64)1 << (bit % 64)));
 }
@@ -206,7 +206,7 @@ void vli_from_le64(u64 *dest, const void *src, unsigned int ndigits)
 EXPORT_SYMBOL(vli_from_le64);
 
 /* Sets dest = src. */
-static void vli_set(u64 *dest, const u64 *src, unsigned int ndigits)
+void vli_set(u64 *dest, const u64 *src, unsigned int ndigits)
 {
 	int i;
 
@@ -233,7 +233,7 @@ EXPORT_SYMBOL(vli_cmp);
 /* Computes result = in << c, returning carry. Can modify in place
  * (if result == in). 0 < shift < 64.
  */
-static u64 vli_lshift(u64 *result, const u64 *in, unsigned int shift,
+u64 vli_lshift(u64 *result, const u64 *in, unsigned int shift,
 		      unsigned int ndigits)
 {
 	u64 carry = 0;
@@ -250,7 +250,7 @@ static u64 vli_lshift(u64 *result, const u64 *in, unsigned int shift,
 }
 
 /* Computes vli = vli >> 1. */
-static void vli_rshift1(u64 *vli, unsigned int ndigits)
+void vli_rshift1(u64 *vli, unsigned int ndigits)
 {
 	u64 *end = vli;
 	u64 carry = 0;
@@ -488,7 +488,7 @@ static void vli_square(u64 *result, const u64 *left, unsigned int ndigits)
 /* Computes result = (left + right) % mod.
  * Assumes that left < mod and right < mod, result != mod.
  */
-static void vli_mod_add(u64 *result, const u64 *left, const u64 *right,
+void vli_mod_add(u64 *result, const u64 *left, const u64 *right,
 			const u64 *mod, unsigned int ndigits)
 {
 	u64 carry;
@@ -1277,7 +1277,7 @@ static void xycz_add_c(u64 *x1, u64 *y1, u64 *x2, u64 *y2,
 	vli_set(x1, t7, ndigits);
 }
 
-static void ecc_point_mult(struct ecc_point *result,
+void ecc_point_mult(struct ecc_point *result,
 			   const struct ecc_point *point, const u64 *scalar,
 			   u64 *initial_z, const struct ecc_curve *curve,
 			   unsigned int ndigits)
