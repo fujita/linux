@@ -34,6 +34,7 @@
 #include <linux/netdevice.h>
 #include <linux/of_device.h>
 #include <linux/platform_device.h>
+#include <linux/rwlock.h>
 #include <linux/sched/signal.h>
 #include <linux/security.h>
 #include <linux/skbuff.h>
@@ -191,6 +192,16 @@ void rust_helper_memcpy_fromio(void *to, const volatile void __iomem *from, long
 	memcpy_fromio(to, from, count);
 }
 EXPORT_SYMBOL_GPL(rust_helper_memcpy_fromio);
+
+void rust_helper_read_lock_bh(rwlock_t *rwlock) {
+	read_lock_bh(rwlock);
+}
+EXPORT_SYMBOL_GPL(rust_helper_read_lock_bh);
+
+void rust_helper_read_unlock_bh(rwlock_t *rwlock) {
+	read_unlock_bh(rwlock);
+}
+EXPORT_SYMBOL_GPL(rust_helper_read_unlock_bh);
 
 void rust_helper___spin_lock_init(spinlock_t *lock, const char *name,
 				  struct lock_class_key *key)
