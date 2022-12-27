@@ -46,12 +46,37 @@
 #include <linux/skbuff.h>
 #include <linux/uaccess.h>
 #include <linux/uio.h>
+#include <net/ip.h>
+#include <net/udp.h>
 
 __noreturn void rust_helper_BUG(void)
 {
 	BUG();
 }
 EXPORT_SYMBOL_GPL(rust_helper_BUG);
+
+bool rust_helper_skb_is_nonlinear(const struct sk_buff *skb)
+{
+    return skb_is_nonlinear(skb);
+}
+EXPORT_SYMBOL_GPL(rust_helper_skb_is_nonlinear);
+
+struct sk_buff *rust_helper_skb_recv_udp(struct sock *sk, unsigned int flags,
+	                                   int *err) {
+	return skb_recv_udp(sk, flags, err);
+}
+EXPORT_SYMBOL_GPL(rust_helper_skb_recv_udp);
+
+struct iphdr *rust_helper_ip_hdr(const struct sk_buff *skb)
+{
+    return ip_hdr(skb);
+}
+EXPORT_SYMBOL_GPL(rust_helper_ip_hdr);
+
+struct udphdr *rust_helper_udp_hdr(const struct sk_buff *skb) {
+	return udp_hdr(skb);
+}
+EXPORT_SYMBOL_GPL(rust_helper_udp_hdr);
 
 void rust_helper_akcipher_request_set_crypt(struct akcipher_request *req,
                                               struct scatterlist *src,

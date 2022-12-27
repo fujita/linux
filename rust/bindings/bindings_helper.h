@@ -30,6 +30,7 @@
 #include <linux/miscdevice.h>
 #include <linux/mm.h>
 #include <linux/module.h>
+#include <linux/net.h>
 #include <linux/netfilter_arp.h>
 #include <linux/netfilter.h>
 #include <linux/netfilter_ipv4.h>
@@ -40,9 +41,14 @@
 #include <linux/random.h>
 #include <linux/security.h>
 #include <linux/slab.h>
+#include <linux/socket.h>
 #include <linux/sysctl.h>
 #include <linux/uaccess.h>
 #include <linux/uio.h>
+#include <net/inet_connection_sock.h>
+#include <net/protocol.h>
+#include <net/sock.h>
+#include <net/udp.h>
 #include <uapi/linux/android/binder.h>
 
 /* `bindgen` gets confused at certain things. */
