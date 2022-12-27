@@ -71,13 +71,13 @@ macro_rules! impl_work_adapter {
                 closure(w);
                 return;
 
-                // Checks that the type of the field is actually `Work`.
-                let tmp = core::mem::MaybeUninit::<$work_type>::uninit();
-                // SAFETY: The pointer is valid and aligned, just not initialised; `addr_of`
-                // ensures that we don't actually read from it (which would be UB) nor create an
-                // intermediate reference.
-                let _x: *const $crate::workqueue::Work =
-                    unsafe { core::ptr::addr_of!((*tmp.as_ptr()).$field) };
+                // // Checks that the type of the field is actually `Work`.
+                // let tmp = core::mem::MaybeUninit::<$work_type>::uninit();
+                // // SAFETY: The pointer is valid and aligned, just not initialised; `addr_of`
+                // // ensures that we don't actually read from it (which would be UB) nor create an
+                // // intermediate reference.
+                // let _x: *const $crate::workqueue::Work =
+                //     unsafe { core::ptr::addr_of!((*tmp.as_ptr()).$field) };
             }
         }
     };
