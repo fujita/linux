@@ -6,14 +6,23 @@
  * Sorted alphabetically.
  */
 
+#include <crypto/aead.h>
+#include <crypto/akcipher.h>
+#include <crypto/ecdh.h>
 #include <crypto/hash.h>
+#include <crypto/kpp.h>
+#include <crypto/rng.h>
+#include <crypto/skcipher.h>
 #include <linux/net.h>
+#include <linux/sockptr.h>
 #include <linux/slab.h>
 #include <linux/refcount.h>
 #include <linux/socket.h>
 #include <linux/tcp.h>
 #include <linux/wait.h>
 #include <linux/sched.h>
+#include <net/tls.h>
+#include <uapi/linux/tls.h>
 
 /* `bindgen` gets confused at certain things. */
 const gfp_t BINDINGS_GFP_KERNEL = GFP_KERNEL;
