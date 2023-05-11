@@ -7,8 +7,11 @@
  */
 
 #include <crypto/hash.h>
+#include <linux/net.h>
 #include <linux/slab.h>
 #include <linux/refcount.h>
+#include <linux/socket.h>
+#include <linux/tcp.h>
 #include <linux/wait.h>
 #include <linux/sched.h>
 
