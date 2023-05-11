@@ -17,7 +17,8 @@ use alloc::vec::Vec;
 ///
 /// The pointer is valid.
 pub struct Socket {
-    pub(crate) sock: *mut bindings::socket,
+    /// temporary hack.
+    pub sock: *mut bindings::socket,
 }
 
 impl Drop for Socket {
