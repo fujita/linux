@@ -18,6 +18,7 @@
  * accidentally exposed.
  */
 
+#include <crypto/hash.h>
 #include <linux/bug.h>
 #include <linux/build_bug.h>
 #include <linux/err.h>
@@ -27,6 +28,31 @@
 #include <linux/spinlock.h>
 #include <linux/sched/signal.h>
 #include <linux/wait.h>
+
+#ifdef CONFIG_CRYPTO
+void rust_helper_crypto_free_shash(struct crypto_shash *tfm)
+{
+	crypto_free_shash(tfm);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_free_shash);
+
+unsigned int rust_helper_crypto_shash_digestsize(struct crypto_shash *tfm)
+{
+    return crypto_shash_digestsize(tfm);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_shash_digestsize);
+
+unsigned int rust_helper_crypto_shash_descsize(struct crypto_shash *tfm)
+{
+    return crypto_shash_descsize(tfm);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_shash_descsize);
+
+int rust_helper_crypto_shash_init(struct shash_desc *desc) {
+	return crypto_shash_init(desc);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_shash_init);
+#endif
 
 __noreturn void rust_helper_BUG(void)
 {

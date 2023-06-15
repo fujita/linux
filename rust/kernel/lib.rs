@@ -31,6 +31,8 @@ extern crate self as kernel;
 #[cfg(not(testlib))]
 mod allocator;
 mod build_assert;
+#[cfg(CONFIG_CRYPTO)]
+pub mod crypto;
 pub mod error;
 pub mod init;
 pub mod ioctl;
