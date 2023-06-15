@@ -6,6 +6,7 @@
  * Sorted alphabetically.
  */
 
+#include <crypto/hash.h>
 #include <linux/errname.h>
 #include <linux/slab.h>
 #include <linux/refcount.h>
