@@ -19,6 +19,7 @@
  */
 
 #include <crypto/hash.h>
+#include <crypto/rng.h>
 #include <linux/bug.h>
 #include <linux/build_bug.h>
 #include <linux/err.h>
@@ -52,6 +53,17 @@ int rust_helper_crypto_shash_init(struct shash_desc *desc) {
 	return crypto_shash_init(desc);
 }
 EXPORT_SYMBOL_GPL(rust_helper_crypto_shash_init);
+
+void rust_helper_crypto_free_rng(struct crypto_rng *tfm) {
+	crypto_free_rng(tfm);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_free_rng);
+
+int rust_helper_crypto_rng_generate(struct crypto_rng *tfm, const u8 *src,
+	unsigned int slen, u8 *dst, unsigned int dlen) {
+	return crypto_rng_generate(tfm, src, slen, dst, dlen);
+}
+EXPORT_SYMBOL_GPL(rust_helper_crypto_rng_generate);
 #endif
 
 __noreturn void rust_helper_BUG(void)
