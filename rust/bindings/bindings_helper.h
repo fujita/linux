@@ -7,6 +7,7 @@
  */
 
 #include <crypto/hash.h>
+#include <crypto/rng.h>
 #include <linux/errname.h>
 #include <linux/slab.h>
 #include <linux/refcount.h>
