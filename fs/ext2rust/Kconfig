@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: GPL-2.0-only
+config EXT2_RUST_FS
+	tristate "Ext2 clone in Rust"
+	depends on RUST
+	select BUFFER_HEAD
+	select FS_IOMAP
+	select LEGACY_DIRECT_IO
+	help
+	  Clone of Ext2 file system in Rust.
+
+	  To compile this file system support as a module, choose M here: the
+	  module will be called ext2.
+
+	  If unsure, say Y.

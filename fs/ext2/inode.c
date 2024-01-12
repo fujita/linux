@@ -788,6 +788,8 @@ int ext2_get_block(struct inode *inode, sector_t iblock,
 	u32 bno;
 	int ret;
 
+	printk("b_size %u, i_blockbits: %u", bh_result->b_size, inode->i_blkbits);
+
 	ret = ext2_get_blocks(inode, iblock, max_blocks, &bno, &new, &boundary,
 			create);
 	if (ret <= 0)

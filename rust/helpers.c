@@ -23,9 +23,13 @@
 #include <kunit/test-bug.h>
 #include <linux/bug.h>
 #include <linux/build_bug.h>
+#include <linux/buffer_head.h>
 #include <linux/err.h>
 #include <linux/errname.h>
+#include <linux/fs.h>
+#include <linux/iversion.h>
 #include <linux/mutex.h>
+#include <linux/pagemap.h>
 #include <linux/refcount.h>
 #include <linux/sched/signal.h>
 #include <linux/spinlock.h>
@@ -157,6 +161,311 @@ void rust_helper_init_work_with_key(struct work_struct *work, work_func_t func,
 }
 EXPORT_SYMBOL_GPL(rust_helper_init_work_with_key);
 
+struct buffer_head *rust_helper_sb_getblk(struct super_block *sb,
+					  sector_t block)
+{
+	return sb_getblk(sb, block);
+}
+EXPORT_SYMBOL_GPL(rust_helper_sb_getblk);
+
+struct buffer_head *rust_helper_sb_bread(struct super_block *sb, sector_t block)
+{
+	return __bread_gfp(sb->s_bdev, block, sb->s_blocksize, __GFP_MOVABLE);
+}
+EXPORT_SYMBOL_GPL(rust_helper_sb_bread);
+
+int rust_helper_bh_read(struct buffer_head *bh, blk_opf_t op_flags)
+{
+	return bh_read(bh, op_flags);
+}
+EXPORT_SYMBOL_GPL(rust_helper_bh_read);
+
+void rust_helper_brelse(struct buffer_head *bh)
+{
+	brelse(bh);
+}
+EXPORT_SYMBOL_GPL(rust_helper_brelse);
+
+void *rust_helper_alloc_inode_sb(struct super_block *sb,
+				 struct kmem_cache *cache, gfp_t gfp)
+{
+	return alloc_inode_sb(sb, cache, gfp);
+}
+EXPORT_SYMBOL_GPL(rust_helper_alloc_inode_sb);
+
+void rust_helper_i_size_write(struct inode *inode, loff_t i_size)
+{
+	i_size_write(inode, i_size);
+}
+EXPORT_SYMBOL_GPL(rust_helper_i_size_write);
+
+void rust_helper_inode_set_iversion(struct inode *inode, u64 val)
+{
+	inode_set_iversion(inode, val);
+}
+EXPORT_SYMBOL_GPL(rust_helper_inode_set_iversion);
+
+uid_t rust_helper_i_uid_read(struct inode *inode)
+{
+	return i_uid_read(inode);
+}
+EXPORT_SYMBOL_GPL(rust_helper_i_uid_read);
+
+gid_t rust_helper_i_gid_read(struct inode *inode)
+{
+	return i_gid_read(inode);
+}
+EXPORT_SYMBOL_GPL(rust_helper_i_gid_read);
+
+void rust_helper_i_uid_write(struct inode *inode, uid_t uid)
+{
+	i_uid_write(inode, uid);
+}
+EXPORT_SYMBOL_GPL(rust_helper_i_uid_write);
+
+void rust_helper_i_gid_write(struct inode *inode, gid_t gid)
+{
+	i_gid_write(inode, gid);
+}
+EXPORT_SYMBOL_GPL(rust_helper_i_gid_write);
+
+time64_t rust_helper_inode_get_atime_sec(const struct inode *inode)
+{
+	return inode_get_atime_sec(inode);
+}
+EXPORT_SYMBOL_GPL(rust_helper_inode_get_atime_sec);
+
+struct timespec64 rust_helper_inode_set_atime(struct inode *inode, time64_t sec,
+					      long nsec)
+{
+	return inode_set_atime(inode, sec, nsec);
+}
+EXPORT_SYMBOL_GPL(rust_helper_inode_set_atime);
+
+time64_t rust_helper_inode_get_mtime_sec(const struct inode *inode)
+{
+	return inode_get_mtime_sec(inode);
+}
+EXPORT_SYMBOL_GPL(rust_helper_inode_get_mtime_sec);
+
+struct timespec64 rust_helper_inode_set_mtime(struct inode *inode, time64_t sec,
+					      long nsec)
+{
+	return inode_set_mtime(inode, sec, nsec);
+}
+EXPORT_SYMBOL_GPL(rust_helper_inode_set_mtime);
+
+struct timespec64 rust_helper_inode_set_mtime_to_ts(struct inode *inode,
+						    struct timespec64 ts)
+{
+	return inode_set_mtime_to_ts(inode, ts);
+}
+EXPORT_SYMBOL_GPL(rust_helper_inode_set_mtime_to_ts);
+
+time64_t rust_helper_inode_get_ctime_sec(const struct inode *inode)
+{
+	return inode_get_ctime_sec(inode);
+}
+EXPORT_SYMBOL_GPL(rust_helper_inode_get_ctime_sec);
+
+struct timespec64 rust_helper_inode_set_ctime(struct inode *inode, time64_t sec,
+					      long nsec)
+{
+	return inode_set_ctime(inode, sec, nsec);
+}
+EXPORT_SYMBOL_GPL(rust_helper_inode_set_ctime);
+
+unsigned long rust_helper_dir_pages(struct inode *inode)
+{
+	return dir_pages(inode);
+}
+EXPORT_SYMBOL_GPL(rust_helper_dir_pages);
+
+void rust_helper_folio_put(struct folio *folio)
+{
+	folio_put(folio);
+}
+EXPORT_SYMBOL_GPL(rust_helper_folio_put);
+
+unsigned long rust_helper_offset_in_folio(struct folio *folio, void *addr)
+{
+	return offset_in_folio(folio, addr);
+}
+EXPORT_SYMBOL_GPL(rust_helper_offset_in_folio);
+
+struct folio *rust_helper_filemap_grab_folio(struct address_space *mapping,
+					     pgoff_t index)
+{
+	return filemap_grab_folio(mapping, index);
+}
+EXPORT_SYMBOL_GPL(rust_helper_filemap_grab_folio);
+
+struct folio *rust_helper_read_mapping_folio(struct address_space *mapping,
+					     pgoff_t index, struct file *file)
+{
+	return read_mapping_folio(mapping, index, file);
+}
+EXPORT_SYMBOL_GPL(rust_helper_read_mapping_folio);
+
+void *rust_helper_kmap_local_folio(struct folio *folio, size_t offset)
+{
+	return kmap_local_folio(folio, offset);
+}
+EXPORT_SYMBOL_GPL(rust_helper_kmap_local_folio);
+
+unsigned long *rust_helper_folio_flags(struct folio *folio, unsigned n)
+{
+	return folio_flags(folio, n);
+}
+EXPORT_SYMBOL_GPL(rust_helper_folio_flags);
+
+bool rust_helper_folio_test_checked(struct folio *folio)
+{
+	return folio_test_checked(folio);
+}
+EXPORT_SYMBOL_GPL(rust_helper_folio_test_checked);
+
+void rust_helper_folio_set_checked(struct folio *folio)
+{
+	folio_set_checked(folio);
+}
+EXPORT_SYMBOL_GPL(rust_helper_folio_set_checked);
+
+void rust_helper_folio_set_error(struct folio *folio)
+{
+	folio_set_error(folio);
+}
+EXPORT_SYMBOL_GPL(rust_helper_folio_set_error);
+
+void rust_helper_folio_release_kmap(struct folio *folio, void *addr)
+{
+	folio_release_kmap(folio, addr);
+}
+EXPORT_SYMBOL_GPL(rust_helper_folio_release_kmap);
+
+size_t rust_helper_folio_size(struct folio *folio)
+{
+	return folio_size(folio);
+}
+EXPORT_SYMBOL_GPL(rust_helper_folio_size);
+
+void rust_helper_folio_lock(struct folio *folio)
+{
+	folio_lock(folio);
+}
+EXPORT_SYMBOL_GPL(rust_helper_folio_lock);
+
+void rust_helper_folio_unlock(struct folio *folio)
+{
+	folio_unlock(folio);
+}
+EXPORT_SYMBOL_GPL(rust_helper_folio_unlock);
+
+loff_t rust_helper_folio_pos(struct folio *folio)
+{
+	return folio_pos(folio);
+}
+EXPORT_SYMBOL_GPL(rust_helper_folio_pos);
+
+struct inode *rust_helper_d_inode(const struct dentry *dentry)
+{
+	return d_inode(dentry);
+}
+EXPORT_SYMBOL_GPL(rust_helper_d_inode);
+
+bool rust_helper_inode_eq_iversion(const struct inode *inode, u64 old)
+{
+	return inode_eq_iversion(inode, old);
+}
+EXPORT_SYMBOL_GPL(rust_helper_inode_eq_iversion);
+
+bool rust_helper_dir_emit(struct dir_context *ctx, const char *name,
+			  int namelen, u64 ino, unsigned type)
+{
+	return dir_emit(ctx, name, namelen, ino, type);
+}
+EXPORT_SYMBOL_GPL(rust_helper_dir_emit);
+
+void rust_helper_map_bh(struct buffer_head *bh, struct super_block *sb,
+			sector_t block)
+{
+	map_bh(bh, sb, block);
+}
+EXPORT_SYMBOL_GPL(rust_helper_map_bh);
+
+void rust_helper_set_buffer_new(struct buffer_head *bh)
+{
+	set_buffer_new(bh);
+}
+EXPORT_SYMBOL_GPL(rust_helper_set_buffer_new);
+
+void rust_helper_set_buffer_boundary(struct buffer_head *bh)
+{
+	set_buffer_boundary(bh);
+}
+EXPORT_SYMBOL_GPL(rust_helper_set_buffer_boundary);
+
+void rust_helper_filemap_invalidate_lock(struct address_space *mapping)
+{
+	filemap_invalidate_lock(mapping);
+}
+EXPORT_SYMBOL_GPL(rust_helper_filemap_invalidate_lock);
+
+void rust_helper_filemap_invalidate_unlock(struct address_space *mapping)
+{
+	filemap_invalidate_unlock(mapping);
+}
+EXPORT_SYMBOL_GPL(rust_helper_filemap_invalidate_unlock);
+
+void rust_helper_mark_inode_dirty(struct inode *inode)
+{
+	mark_inode_dirty(inode);
+}
+EXPORT_SYMBOL_GPL(rust_helper_mark_inode_dirty);
+
+loff_t rust_helper_i_size_read(const struct inode *inode)
+{
+	return i_size_read(inode);
+}
+EXPORT_SYMBOL_GPL(rust_helper_i_size_read);
+
+unsigned long rust_helper_find_next_zero_bit_le(const void *addr,
+						unsigned long size,
+						unsigned long offset)
+{
+	return find_next_zero_bit_le(addr, size, offset);
+}
+EXPORT_SYMBOL_GPL(rust_helper_find_next_zero_bit_le);
+
+int rust_helper_test_and_set_bit_le(int nr, void *addr)
+{
+	return test_and_set_bit_le(nr, addr);
+}
+EXPORT_SYMBOL_GPL(rust_helper_test_and_set_bit_le);
+
+void rust_helper_inode_inc_link_count(struct inode *inode)
+{
+	inode_inc_link_count(inode);
+}
+EXPORT_SYMBOL_GPL(rust_helper_inode_inc_link_count);
+
+void rust_helper_inode_dec_link_count(struct inode *inode)
+{
+	inode_dec_link_count(inode);
+}
+EXPORT_SYMBOL_GPL(rust_helper_inode_dec_link_count);
+
+void rust_helper_inode_inc_iversion(struct inode *inode)
+{
+	inode_inc_iversion(inode);
+}
+EXPORT_SYMBOL_GPL(rust_helper_inode_inc_iversion);
+
+void rust_helper_kunmap_local(void *addr)
+{
+	kunmap_local(addr);
+}
+EXPORT_SYMBOL_GPL(rust_helper_kunmap_local);
 /*
  * `bindgen` binds the C `size_t` type as the Rust `usize` type, so we can
  * use it in contexts where Rust expects a `usize` like slice (array) indices.
@@ -173,8 +482,6 @@ EXPORT_SYMBOL_GPL(rust_helper_init_work_with_key);
  * your platform such that `size_t` matches `uintptr_t` (i.e., to increase
  * `size_t`, because `uintptr_t` has to be at least as big as `size_t`).
  */
-static_assert(
-	sizeof(size_t) == sizeof(uintptr_t) &&
-	__alignof__(size_t) == __alignof__(uintptr_t),
-	"Rust code expects C `size_t` to match Rust `usize`"
-);
+static_assert(sizeof(size_t) == sizeof(uintptr_t) &&
+		      __alignof__(size_t) == __alignof__(uintptr_t),
+	      "Rust code expects C `size_t` to match Rust `usize`");

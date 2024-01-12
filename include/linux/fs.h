@@ -3526,4 +3526,6 @@ extern int vfs_fadvise(struct file *file, loff_t offset, loff_t len,
 extern int generic_fadvise(struct file *file, loff_t offset, loff_t len,
 			   int advice);
 
+extern void dump_inode(struct inode *inode);
+
 #endif /* _LINUX_FS_H */

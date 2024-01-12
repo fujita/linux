@@ -838,6 +838,7 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
 
 	spin_lock_init(&sbi->s_lock);
 	ret = -EINVAL;
+	printk("ext2 sb_block: %lu\n", sb_block);
 
 	/*
 	 * See what the current blocksize for the device is, and

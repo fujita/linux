@@ -7,15 +7,24 @@
  */
 
 #include <kunit/test.h>
+#include <linux/buffer_head.h>
 #include <linux/errname.h>
+#include <linux/fs.h>
 #include <linux/ethtool.h>
+#include <linux/iversion.h>
 #include <linux/mdio.h>
+#include <linux/mpage.h>
+#include <linux/page-flags.h>
 #include <linux/phy.h>
 #include <linux/slab.h>
+#include <linux/statfs.h>
 #include <linux/refcount.h>
 #include <linux/wait.h>
 #include <linux/sched.h>
 #include <linux/workqueue.h>
+#include <linux/writeback.h>
+#include <linux/quotaops.h>
+#include <../fs/ext2/ext2.h>
 
 /* `bindgen` gets confused at certain things. */
 const size_t RUST_CONST_HELPER_ARCH_SLAB_MINALIGN = ARCH_SLAB_MINALIGN;

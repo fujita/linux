@@ -2562,3 +2562,10 @@ umode_t mode_strip_sgid(struct mnt_idmap *idmap,
 	return mode & ~S_ISGID;
 }
 EXPORT_SYMBOL(mode_strip_sgid);
+
+void dump_inode(struct inode *inode) {
+	printk("ino %lu, mode: %u, opflags: %u, uid: %u, gid %u\n", inode->i_ino, inode->i_mode, inode->i_opflags, inode->i_uid.val, inode->i_gid.val);
+	printk("ino %lu, flags: %u, i_sb: %p, i_op: %p, i_fop: %p, a_os %p\n", inode->i_ino, inode->i_flags, inode->i_sb, inode->i_op, inode->i_mapping->a_ops, inode->i_fop);
+	printk("ino %lu, nlink: %u, size %u, bytes: %u, rdev: %u, blocks %u\n", inode->i_ino, inode->__i_nlink, inode->i_size, inode->i_bytes, inode->i_rdev, inode->i_blocks);	
+}
+EXPORT_SYMBOL_GPL(dump_inode);
